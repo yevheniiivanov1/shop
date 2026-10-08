@@ -30,6 +30,18 @@ class ProfileTest < ActionDispatch::IntegrationTest
     assert_equal "new@example.com", @alice.reload.email
   end
 
+  test "a wrong current password changes nothing" do
+    patch "/api/profile", params: { user: {
+      first_name: "Mallory", email: "new@example.com", current_password: "wrong"
+    } }, as: :json
+
+    assert_response :unprocessable_content
+    assert_equal [ "Current password is invalid" ], json["errors"]
+    @alice.reload
+    assert_equal "alice@example.com", @alice.email
+    assert_equal "Alice", @alice.first_name
+  end
+
   test "a demo account can't change its password" do
     demo = users(:demo_admin)
     sign_in demo

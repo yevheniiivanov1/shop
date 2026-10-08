@@ -46,6 +46,16 @@ class AdminTest < ActionDispatch::IntegrationTest
       assert alice.valid_password?("password"), "blank password must not be changed"
     end
 
+    test "changing their own password keeps the admin signed in" do
+      admin = users(:admin)
+      patch "/api/admin/users/#{admin.id}", params: { user: { password: "newpass1" } }, as: :json
+      assert_response :success
+      assert admin.reload.valid_password?("newpass1")
+
+      get "/api/admin/users", as: :json
+      assert_response :success
+    end
+
     test "rejects unknown roles" do
       patch "/api/admin/users/#{users(:alice).id}", params: { user: { role: "root" } }, as: :json
       assert_response :unprocessable_content
