@@ -1,0 +1,79 @@
+# Local development: `docker compose up`, then open http://localhost:5173
+#   db       - PostgreSQL (also on localhost:5433 for DB tools)
+#   backend  - Rails API on http://localhost:3000 (code is mounted, reloads on change)
+#   frontend - Vite dev server for the React client, proxies /api to the backend
+#   app      - optional production build, see the "prod" profile below
+name: shop
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    image: ruby:3.4
+    working_dir: /rails
+    command: >
+      bash -c "bundle check >/dev/null || bundle install &&
+               rm -f tmp/pids/server.pid &&
+               bin/rails db:prepare db:seed &&
+               bin/rails server -b 0.0.0.0 -p 3000"
+    environment:
+      DB_HOST: db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    volumes:
+      - ./backend:/rails
+      - bundle:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: node:24-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      API_PROXY_TARGET: http://backend:3000
+      VITE_USE_POLLING: "true"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  # The production image (same as on the hosting), on http://localhost:8080:
+  #   docker compose --profile prod up --build app
+  app:
+    profiles: ["prod"]
+    build: .
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/shop_production
+      SECRET_KEY_BASE: local-production-check-only-not-a-real-secret-0123456789abcdef
+      SSL: "false"
+    ports:
+      - "8080:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  bundle:
+    name: shop_bundle
+  frontend_node_modules:
