@@ -318,3 +318,12 @@ Devise.setup do |config|
   # changed. Defaults to true, so a user is signed in automatically after changing a password.
   # config.sign_in_after_change_password = true
 end
+
+# Rails 8 loads routes lazily (on the first request) when eager_load is off, as
+# in development and test. Devise configures Warden's strategies while routes
+# load, but each request's Warden proxy copies that config before the router
+# runs, so the first request after boot couldn't sign anyone in. Load routes at
+# boot instead; with eager_load (production) Rails already does.
+Rails.application.config.after_initialize do |app|
+  app.reload_routes! unless app.config.eager_load
+end
