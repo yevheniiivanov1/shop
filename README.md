@@ -2,6 +2,8 @@
 
 A small online shop built as a test assignment: sign-up and sign-in, a searchable catalog, a cart, (simulated) payment, order history and an admin area.
 
+**Live demo: https://shop-kxqq.onrender.com** (Render free plan: after a period of inactivity the first request can take up to a minute while the service wakes up).
+
 - **Backend:** Ruby 3.4, Rails 8.1 (API-only), PostgreSQL, Devise 5
 - **Frontend:** React 19 + TypeScript, Vite, React Router (a standalone SPA, no Rails views)
 - **Infrastructure:** Docker Compose for development, a single production Dockerfile, a Render blueprint
