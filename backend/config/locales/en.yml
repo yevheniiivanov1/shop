@@ -10,6 +10,10 @@ en:
           demo_account_locked: "This is a shared demo account: its email, password and role can't be changed and it can't be deleted"
           restrict_dependent_destroy:
             has_many: "A user who has orders can't be deleted"
+        order:
+          attributes:
+            amount:
+              less_than_or_equal_to: is too large for a single order
         item:
           restrict_dependent_destroy:
             has_many: "An item that has already been ordered can't be deleted"
@@ -27,4 +31,7 @@ en:
       too_many_lines: "Too many items in one order (maximum is %{max})"
       invalid_line: Invalid order line
       quantity_too_large: "Quantity of a single item can't exceed %{max}"
-      items_not_found: "Items not found: %{ids}"
+      items_not_found:
+        one: An item in your cart is no longer available
+        other: "%{count} items in your cart are no longer available"
+      prices_changed: Prices have changed since you added these items to your cart. Please review the new total.

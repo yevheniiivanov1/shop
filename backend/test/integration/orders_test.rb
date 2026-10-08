@@ -23,6 +23,21 @@ class OrdersTest < ActionDispatch::IntegrationTest
     assert_equal "899.00", json.dig("order", "amount")
   end
 
+  test "a total other than the one the customer saw is a 409" do
+    post "/api/orders", params: { items: [ { item_id: items(:laptop).id, quantity: 1 } ], expected_amount: "1.00" }, as: :json
+
+    assert_response :conflict
+    assert_equal "prices_changed", json["code"]
+  end
+
+  test "items that are gone are listed by id" do
+    post "/api/orders", params: { items: [ { item_id: 0, quantity: 1 } ] }, as: :json
+
+    assert_response :unprocessable_content
+    assert_equal "items_not_found", json["code"]
+    assert_equal [ 0 ], json["missing_item_ids"]
+  end
+
   test "invalid cart is rejected" do
     post "/api/orders", params: { items: [ { item_id: items(:laptop).id, quantity: 0 } ] }, as: :json
 

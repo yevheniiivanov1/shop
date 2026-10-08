@@ -29,6 +29,13 @@ class ItemsTest < ActionDispatch::IntegrationTest
     assert_equal 100, json.dig("meta", "per_page")
   end
 
+  test "filters by a list of ids" do
+    get "/api/items?ids=#{items(:mouse).id},#{items(:cable).id},0,abc"
+
+    assert_response :success
+    assert_equal [ items(:mouse).id, items(:cable).id ].sort, json["items"].map { _1["id"] }.sort
+  end
+
   test "shows an item" do
     get "/api/items/#{items(:mouse).id}", as: :json
 

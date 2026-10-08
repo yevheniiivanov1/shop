@@ -54,12 +54,51 @@ class CheckoutTest < ActiveSupport::TestCase
     end
   end
 
-  test "rejects unknown items" do
+  test "rejects unknown items and says which ones" do
     result = Checkout.call(user: @user, lines: [ { item_id: @laptop.id, quantity: 1 }, { item_id: 0, quantity: 1 } ])
 
     assert_not result.success?
-    assert_match "0", result.errors.first
+    assert_equal :items_not_found, result.code
+    assert_equal [ 0 ], result.missing_item_ids
+    assert_equal "An item in your cart is no longer available", result.errors.first
     assert_equal 1, Order.count # only the fixture order
+  end
+
+  test "charges only the total the customer saw" do
+    lines = [ { item_id: @mouse.id, quantity: 2 } ]
+
+    assert Checkout.call(user: @user, lines:, expected_amount: "199.00").success?
+    assert Checkout.call(user: @user, lines:, expected_amount: 199).success?
+
+    result = nil
+    assert_no_difference -> { Order.count } do
+      result = Checkout.call(user: @user, lines:, expected_amount: "198.00")
+    end
+    assert_equal :prices_changed, result.code
+  end
+
+  test "ignores an expected amount that isn't a number" do
+    assert Checkout.call(user: @user, lines: [ { item_id: @mouse.id, quantity: 1 } ], expected_amount: [ "1" ]).success?
+  end
+
+  test "an item deleted while the order is being placed is reported, not raised" do
+    checkout = Checkout.new(user: @user, lines: [ { item_id: @laptop.id, quantity: 1 } ])
+    # Deletes the item right after Checkout has read it.
+    def checkout.load_items(ids) = super.tap { Item.where(id: ids).delete_all }
+
+    result = checkout.call
+
+    assert_equal :items_not_found, result.code
+    assert_equal [ @laptop.id ], result.missing_item_ids
+  end
+
+  test "a total too large for the amount column is a validation error" do
+    yacht = Item.create!(name: "Yacht", price: 99_999_999)
+
+    result = Checkout.call(user: @user, lines: [ { item_id: yacht.id, quantity: 1000 } ])
+
+    assert_not result.success?
+    assert_equal "Amount is too large for a single order", result.errors.first
   end
 
   test "rejects too large quantities" do
