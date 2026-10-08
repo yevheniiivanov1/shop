@@ -82,6 +82,18 @@ class AdminTest < ActionDispatch::IntegrationTest
       assert_equal 2, json["errors"].size
     end
 
+    test "can't change the demo accounts' credentials or delete them" do
+      demo = users(:demo_admin)
+
+      patch "/api/admin/users/#{demo.id}", params: { user: { role: "user", password: "newpass1" } }, as: :json
+      assert_response :unprocessable_content
+      assert_match "demo account", json["error"]
+
+      delete "/api/admin/users/#{demo.id}", as: :json
+      assert_response :unprocessable_content
+      assert demo.reload.admin?
+    end
+
     test "can't delete an item that was ordered" do
       delete "/api/admin/items/#{items(:mouse).id}", as: :json
       assert_response :unprocessable_content

@@ -7,6 +7,7 @@ en:
     errors:
       models:
         user:
+          demo_account_locked: "This is a shared demo account: its email, password and role can't be changed and it can't be deleted"
           restrict_dependent_destroy:
             has_many: "A user who has orders can't be deleted"
         item:

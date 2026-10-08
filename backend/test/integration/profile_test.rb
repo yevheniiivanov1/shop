@@ -30,6 +30,17 @@ class ProfileTest < ActionDispatch::IntegrationTest
     assert_equal "new@example.com", @alice.reload.email
   end
 
+  test "a demo account can't change its password" do
+    demo = users(:demo_admin)
+    sign_in demo
+    patch "/api/profile", params: { user: {
+      password: "newpass1", password_confirmation: "newpass1", current_password: "password"
+    } }, as: :json
+
+    assert_response :unprocessable_content
+    assert demo.reload.valid_password?("password")
+  end
+
   test "changing password keeps the user signed in" do
     patch "/api/profile", params: { user: {
       password: "newpass1", password_confirmation: "newpass1", current_password: "password"
