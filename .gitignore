@@ -1,0 +1,22 @@
+# Rails
+/backend/.bundle
+/backend/log/*
+!/backend/log/.keep
+/backend/tmp/*
+!/backend/tmp/.keep
+/backend/storage
+/backend/spa
+/backend/public/assets
+/backend/config/master.key
+/backend/config/credentials/*.key
+/backend/.env*
+
+# Frontend (see also frontend/.gitignore)
+/frontend/node_modules
+/frontend/dist
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea
+.vscode

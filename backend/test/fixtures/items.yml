@@ -1,0 +1,14 @@
+laptop:
+  name: Lenovo IdeaPad 5 Laptop
+  description: 14", Ryzen 7, 16 GB RAM
+  price: 899.00
+
+mouse:
+  name: Logitech MX Master 3S Mouse
+  description: Wireless mouse for your laptop
+  price: 99.50
+
+cable:
+  name: USB-C Cable
+  description: 2 m, 100 W
+  price: 9.00

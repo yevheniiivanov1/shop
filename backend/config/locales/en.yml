@@ -1,0 +1,28 @@
+# Messages returned by the API. Model/attribute names and validation messages
+# use the Rails and Devise defaults.
+en:
+  activerecord:
+    models:
+      order_description: Order line
+    errors:
+      models:
+        user:
+          restrict_dependent_destroy:
+            has_many: "A user who has orders can't be deleted"
+        item:
+          restrict_dependent_destroy:
+            has_many: "An item that has already been ordered can't be deleted"
+  api:
+    errors:
+      not_found: Not found
+      forbidden: You are not allowed to do this
+      invalid_csrf: Your session has expired, please try again
+      cannot_demote_self: You can't remove admin rights from yourself
+      cannot_delete_self: You can't delete yourself
+  checkout:
+    errors:
+      empty: Your cart is empty
+      too_many_lines: "Too many items in one order (maximum is %{max})"
+      invalid_line: Invalid order line
+      quantity_too_large: "Quantity of a single item can't exceed %{max}"
+      items_not_found: "Items not found: %{ids}"

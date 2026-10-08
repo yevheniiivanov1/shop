@@ -1,0 +1,11 @@
+bobs_mouse:
+  order: bobs_order
+  item: mouse
+  quantity: 2
+  price: 99.50
+
+bobs_cable:
+  order: bobs_order
+  item: cable
+  quantity: 1
+  price: 9.00
