@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { ordersApi } from '../api/endpoints'
 import type { Order, OrderSummary } from '../api/types'
 import { EmptyState, ErrorMessage, Notice, Pagination, Spinner } from '../components/ui'
@@ -8,7 +8,14 @@ import { useFetch } from '../lib/useFetch'
 
 export function OrdersPage() {
   const location = useLocation()
-  const createdOrderId = (location.state as { createdOrderId?: number } | null)?.createdOrderId
+  const navigate = useNavigate()
+  // The cart passes the new order in history state. Show the notice once and
+  // clear that state, so reloading the page doesn't announce the payment again.
+  const [createdOrderId] = useState(() => (location.state as { createdOrderId?: number } | null)?.createdOrderId)
+  useEffect(() => {
+    if (location.state) navigate(location.pathname + location.search, { replace: true, state: null })
+  }, [location, navigate])
+
   const [params, setParams] = useSearchParams()
   const page = Number(params.get('page') ?? 1)
 

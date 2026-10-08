@@ -21,8 +21,17 @@ export function CatalogPage() {
   const sort = params.get('sort') ?? 'name'
   const page = Number(params.get('page') ?? 1)
 
-  // The search box updates the URL (and so the request) after a short pause.
+  // The search box follows the URL when it changes from outside (the Catalog
+  // link, Back/Forward). A change that came from typing is left alone, so a
+  // trailing space the user is still typing after isn't trimmed away.
   const [search, setSearch] = useState(q)
+  const [syncedQ, setSyncedQ] = useState(q)
+  if (q !== syncedQ) {
+    setSyncedQ(q)
+    if (q !== search.trim()) setSearch(q)
+  }
+
+  // ...and the URL (and so the request) follows the box after a short pause.
   const debouncedSearch = useDebounce(search.trim())
   useEffect(() => {
     if (debouncedSearch === q) return
@@ -36,7 +45,9 @@ export function CatalogPage() {
       },
       { replace: true },
     )
-  }, [debouncedSearch, q, setParams])
+    // Reacts to typing only: a `q` changed from outside must not be undone.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [debouncedSearch])
 
   const setParam = (key: string, value: string | null) =>
     setParams((prev) => {
