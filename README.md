@@ -15,6 +15,8 @@ A small online shop built as a test assignment: sign-up and sign-in, a searchabl
 | Admin | `admin@example.com` |
 | Customer | `user@example.com` |
 
+The demo accounts are shared, so their email, password and role can't be changed and they can't be deleted. Every start of the app also restores their names and the demo items. To try changing a password or a role, sign up with your own account (or create one as the admin).
+
 ## Quick start
 
 Only Docker is required.
@@ -61,8 +63,8 @@ Data integrity is also enforced by the database: foreign keys, `NOT NULL`, check
 ### Steps
 
 1. **Sign-up and sign-in** use the Devise gem. The session lives in an encrypted HttpOnly cookie, and state-changing requests are protected with a CSRF token.
-2. **Picking items:** the catalog supports search by name and description (`ILIKE` backed by PostgreSQL trigram indexes), sorting and pagination. Each item has a quantity picker; the cart is kept in the browser.
-3. **"Payment":** `POST /api/orders` creates a row in `orders` and one row in `order_descriptions` per item, in a single transaction ([`Checkout`](backend/app/services/checkout.rb)). The amount is calculated on the server from database prices; prices sent by the client are ignored.
+2. **Picking items:** the catalog supports search by name and description (`ILIKE` backed by PostgreSQL trigram indexes), sorting and pagination. Each item has a quantity picker; the cart is kept in the browser and refreshes its prices from the API when opened.
+3. **"Payment":** `POST /api/orders` creates a row in `orders` and one row in `order_descriptions` per item, in a single transaction ([`Checkout`](backend/app/services/checkout.rb)). The amount is calculated on the server from database prices; prices sent by the client are ignored. The client also sends the total the customer saw, and if prices changed in the meantime nothing is charged and the cart shows the new prices.
 4. **Orders belong to users** via `orders.user_id`, a foreign key to `users`.
 5. **Roles**
    - **admin** can view and edit the `users` table (including roles and passwords) and the `items` table (create, edit, delete).
@@ -71,7 +73,7 @@ Data integrity is also enforced by the database: foreign keys, `NOT NULL`, check
 
 ## API
 
-All responses are JSON. Errors look like `{ "error": "...", "errors": ["..."] }`.
+All responses are JSON. Errors look like `{ "error": "...", "errors": ["..."] }`, sometimes with a machine-readable `code`.
 
 | Method | Path | Access | Purpose |
 |---|---|---|---|
@@ -81,10 +83,11 @@ All responses are JSON. Errors look like `{ "error": "...", "errors": ["..."] }`
 | GET | `/api/me` | everyone | current user or `null` |
 | PATCH | `/api/profile` | signed in | update own details |
 | GET | `/api/items?q=&sort=&page=&per_page=` | everyone | catalog: search, sorting, pagination |
+| GET | `/api/items?ids=1,2,3` | everyone | current data for specific items (the cart) |
 | GET | `/api/items/:id` | everyone | single item |
 | GET | `/api/orders` | signed in | own orders |
 | GET | `/api/orders/:id` | signed in | own order with its lines |
-| POST | `/api/orders` | signed in | pay for the cart: `{ items: [{ item_id, quantity }] }` |
+| POST | `/api/orders` | signed in | pay for the cart: `{ items: [{ item_id, quantity }], expected_amount }`. 409 `prices_changed` if the total differs, 422 `items_not_found` with `missing_item_ids` |
 | GET/POST/PATCH/DELETE | `/api/admin/users[/:id]` | admin | users table |
 | POST/PATCH/DELETE | `/api/admin/items[/:id]` | admin | items table |
 
@@ -95,15 +98,19 @@ All responses are JSON. Errors look like `{ "error": "...", "errors": ["..."] }`
 - **Guard rails:**
   - the role can't be set on sign-up or from the profile;
   - an admin can't remove their own admin rights or delete themselves;
-  - items that were already ordered and users who have orders can't be deleted (`restrict_with_error`).
-- **Money** is stored as `decimal` and sent as a string (`"1299.00"`), never as a float.
+  - items that were already ordered and users who have orders can't be deleted (`restrict_with_error`);
+  - sign-in is limited to 10 attempts per IP every 3 minutes, sign-up to 10 per hour (Rails 8 `rate_limit`);
+  - query parameters that arrive as arrays or hashes (`?q[]=x`) fall back to defaults instead of failing.
+- **Money** is stored as `decimal` and sent as a string (`"1299.00"`), never as a float. The client sums cart totals in cents.
+- **Routes load at boot in development and test too** (`config/initializers/devise.rb`). Rails 8 loads them lazily there, and Devise only configures Warden's sign-in strategies while routes load, so the first request after boot couldn't sign anyone in.
 
 ## Tests and checks
 
 ```bash
-docker compose exec backend bin/rails test        # models, checkout service, API (43 tests)
+docker compose exec backend bin/rails test        # models, checkout service, API (65 tests)
 docker compose exec backend bin/rubocop           # style
 docker compose exec backend bin/brakeman          # static security analysis
+cd frontend && npm test                           # Vitest + Testing Library (27 tests)
 cd frontend && npm run lint && npm run build      # oxlint + TypeScript type check + build
 ```
 
@@ -113,7 +120,7 @@ The same checks run on GitHub Actions ([`.github/workflows/ci.yml`](.github/work
 
 1. Push the repository to GitHub.
 2. On [render.com](https://render.com) choose **New → Blueprint** and pick the repository. [`render.yaml`](render.yaml) creates a PostgreSQL database and a web service built from the root `Dockerfile`.
-3. On every start the container runs migrations and loads the demo data (it is never duplicated).
+3. On every start the container runs migrations and loads or restores the demo data (it is never duplicated).
 
 Check the current free-plan limits before deploying: free web services sleep when idle (the first request afterwards is slow), and free databases have a limited lifetime. The database can live elsewhere (for example, Neon); just set its URL in the `DATABASE_URL` environment variable.
 
@@ -129,7 +136,8 @@ backend/                    Rails API
   test/                     minitest: models, service, API integration tests
 frontend/                   React SPA
   src/api/                  fetch client (cookie session + CSRF), types, endpoints
-  src/auth/, src/cart/      auth and cart contexts
+  src/auth/, src/cart/      auth and cart contexts, cart math
+  src/**/*.test.ts(x)       Vitest tests
   src/pages/                pages, including admin/
 Dockerfile                  production image: React build + Rails
 docker-compose.yml          development: db + backend + frontend
