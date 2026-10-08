@@ -4,7 +4,7 @@
 module Api
   class ItemsController < ApplicationController
     def index
-      scope = Item.search(params[:q]).sorted_by(params[:sort])
+      scope = Item.search(string_param(:q)).sorted_by(string_param(:sort))
       items, meta = paginate(scope)
 
       render json: { items: items.map { ItemSerializer.call(_1) }, meta: }

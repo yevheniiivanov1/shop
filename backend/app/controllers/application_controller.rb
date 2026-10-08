@@ -41,9 +41,21 @@ class ApplicationController < ActionController::API
     render json: { error: messages.first, errors: messages }, status:
   end
 
+  # Query params are user input: `?q[]=x` or `?q[a]=b` arrive as an Array or a
+  # Hash. Simple filters only take plain strings and ignore anything else.
+  def string_param(key)
+    value = params[key]
+    value if value.is_a?(String)
+  end
+
+  def integer_param(key, default)
+    value = string_param(key)
+    (value && Integer(value, 10, exception: false)) || default
+  end
+
   def paginate(scope)
-    per_page = params.fetch(:per_page, 20).to_i.clamp(1, 100)
-    page = [ params.fetch(:page, 1).to_i, 1 ].max
+    per_page = integer_param(:per_page, 20).clamp(1, 100)
+    page = integer_param(:page, 1).clamp(1, 1_000_000)
     total = scope.count
 
     records = scope.offset((page - 1) * per_page).limit(per_page)

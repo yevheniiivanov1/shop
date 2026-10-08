@@ -5,7 +5,7 @@ module Api
       before_action :set_user, only: [ :show, :update, :destroy ]
 
       def index
-        users, meta = paginate(User.search(params[:q]).order(:id))
+        users, meta = paginate(User.search(string_param(:q)).order(:id))
         render json: { users: users.map { UserSerializer.call(_1) }, meta: }
       end
 

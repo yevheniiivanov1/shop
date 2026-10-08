@@ -45,6 +45,14 @@ class OrdersTest < ActionDispatch::IntegrationTest
     assert_equal 2, json.dig("order", "lines").size
   end
 
+  test "malformed pagination params fall back to defaults" do
+    sign_in users(:bob)
+    get "/api/orders?page[]=2&per_page=abc"
+
+    assert_response :success
+    assert_equal({ "page" => 1, "per_page" => 20, "total" => 1, "total_pages" => 1 }, json["meta"])
+  end
+
   test "someone else's order is not found" do
     get "/api/orders/#{orders(:bobs_order).id}", as: :json
     assert_response :not_found

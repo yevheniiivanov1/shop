@@ -12,6 +12,23 @@ class ItemsTest < ActionDispatch::IntegrationTest
     assert_equal [ "Logitech MX Master 3S Mouse" ], json["items"].map { _1["name"] }
   end
 
+  test "arrays, hashes and junk in query params fall back to defaults" do
+    [
+      "q[]=x", "q[a]=b", "sort[]=name", "page[]=1", "page[a]=1", "per_page[]=1",
+      "page=abc", "page=-5", "page=#{"9" * 40}", "per_page=0", "per_page=100000"
+    ].each do |query|
+      get "/api/items?#{query}", headers: { "Accept" => "application/json" }
+
+      assert_response :success, "GET /api/items?#{query}"
+      assert_equal Item.count, json.dig("meta", "total"), "GET /api/items?#{query}"
+    end
+
+    get "/api/items?per_page=0"
+    assert_equal 1, json.dig("meta", "per_page")
+    get "/api/items?per_page=100000"
+    assert_equal 100, json.dig("meta", "per_page")
+  end
+
   test "shows an item" do
     get "/api/items/#{items(:mouse).id}", as: :json
 

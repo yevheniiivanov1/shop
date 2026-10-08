@@ -28,6 +28,13 @@ class AdminTest < ActionDispatch::IntegrationTest
       assert_equal 1, json.dig("meta", "total")
     end
 
+    test "user search ignores non-string queries" do
+      get "/api/admin/users?q[]=alice&page[x]=1"
+
+      assert_response :success
+      assert_equal User.count, json.dig("meta", "total")
+    end
+
     test "edits a user, including the role and password" do
       alice = users(:alice)
       patch "/api/admin/users/#{alice.id}", params: { user: { last_name: "Smith", role: "admin", password: "" } }, as: :json
