@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../api/client'
 import type { PageMeta } from '../api/types'
-import { MAX_QUANTITY } from '../cart/CartContext'
+import { MAX_QUANTITY } from '../cart/cart'
 
 export function Spinner({ label = 'Loading…' }: { label?: string }) {
   return (

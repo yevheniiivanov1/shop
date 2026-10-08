@@ -1,24 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Item } from '../api/types'
-
-export const MAX_QUANTITY = 1000
-
-export interface CartLine {
-  item: Item
-  quantity: number
-}
+import { MAX_QUANTITY, toCents, type CartLine } from './cart'
 
 interface CartContextValue {
   lines: CartLine[]
   /** Total number of units in the cart. */
   count: number
-  /** Estimated total; the server recalculates it from current prices on checkout. */
-  total: number
+  /** Total in cents, from the prices stored with the cart lines. */
+  totalCents: number
   quantityOf: (itemId: number) => number
   add: (item: Item, quantity: number) => void
   setQuantity: (itemId: number, quantity: number) => void
   remove: (itemId: number) => void
   clear: () => void
+  /**
+   * Replaces the stored item data with `current` (fresh from the API) and drops
+   * lines whose item was requested (`requestedIds`) but is gone.
+   */
+  syncWithCatalog: (current: Item[], requestedIds: number[]) => void
 }
 
 const STORAGE_KEY = 'shop.cart'
@@ -80,19 +79,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clear = useCallback(() => setLines([]), [])
 
+  const syncWithCatalog = useCallback((current: Item[], requestedIds: number[]) => {
+    const fresh = new Map(current.map((item) => [item.id, item]))
+    const requested = new Set(requestedIds)
+    setLines((lines) =>
+      lines
+        .filter((line) => !requested.has(line.item.id) || fresh.has(line.item.id))
+        .map((line) => ({ ...line, item: fresh.get(line.item.id) ?? line.item })),
+    )
+  }, [])
+
   const value = useMemo<CartContextValue>(() => {
     const quantities = new Map(lines.map((line) => [line.item.id, line.quantity]))
     return {
       lines,
       count: lines.reduce((sum, line) => sum + line.quantity, 0),
-      total: lines.reduce((sum, line) => sum + Number(line.item.price) * line.quantity, 0),
+      totalCents: lines.reduce((sum, line) => sum + toCents(line.item.price) * line.quantity, 0),
       quantityOf: (itemId) => quantities.get(itemId) ?? 0,
       add,
       setQuantity,
       remove,
       clear,
+      syncWithCatalog,
     }
-  }, [lines, add, setQuantity, remove, clear])
+  }, [lines, add, setQuantity, remove, clear, syncWithCatalog])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

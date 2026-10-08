@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Item, Order, OrderSummary, PageMeta, Role, User } from './types'
+import type { Item, Money, Order, OrderSummary, PageMeta, Role, User } from './types'
 
 export interface SignUpData {
   first_name: string
@@ -51,13 +51,22 @@ export const authApi = {
 export const itemsApi = {
   list: (query: ListQuery, signal?: AbortSignal) =>
     api.get<{ items: Item[]; meta: PageMeta }>('/api/items', { ...query }, signal),
+  /** Current data for specific items (up to 100), e.g. the ones in the cart. */
+  byIds: (ids: number[]) =>
+    api.get<{ items: Item[]; meta: PageMeta }>('/api/items', { ids: ids.join(','), per_page: 100 }),
 }
 
 export const ordersApi = {
   list: (page: number, signal?: AbortSignal) =>
     api.get<{ orders: OrderSummary[]; meta: PageMeta }>('/api/orders', { page }, signal),
   get: (id: number) => api.get<{ order: Order }>(`/api/orders/${id}`),
-  create: (items: { item_id: number; quantity: number }[]) => api.post<{ order: Order }>('/api/orders', { items }),
+  /**
+   * Pays for the cart. `expectedAmount` is the total the customer saw: if the
+   * prices add up to something else the API charges nothing and answers 409
+   * (code "prices_changed").
+   */
+  create: (items: { item_id: number; quantity: number }[], expectedAmount: Money) =>
+    api.post<{ order: Order }>('/api/orders', { items, expected_amount: expectedAmount }),
 }
 
 export const adminApi = {

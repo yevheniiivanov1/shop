@@ -11,6 +11,8 @@
   --danger-soft: #fef2f2;
   --success: #15803d;
   --success-soft: #f0fdf4;
+  --warning: #92400e;
+  --warning-soft: #fffbeb;
   --radius: 10px;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
 
@@ -37,6 +39,8 @@
     --danger-soft: #2a1717;
     --success: #4ade80;
     --success-soft: #13261a;
+    --warning: #fbbf24;
+    --warning-soft: #2a2110;
     --shadow: none;
   }
 }
@@ -368,6 +372,15 @@ a {
 .alert--success {
   background: var(--success-soft);
   color: var(--success);
+}
+
+.alert--warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.alert--warning ul {
+  margin: 6px 0;
 }
 
 .spinner {
