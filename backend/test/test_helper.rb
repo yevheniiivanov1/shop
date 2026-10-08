@@ -15,6 +15,8 @@ end
 class ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
 
+  setup { ApplicationController::RATE_LIMIT_STORE.clear }
+
   def json
     response.parsed_body
   end

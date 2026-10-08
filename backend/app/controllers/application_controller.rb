@@ -3,6 +3,9 @@ class ApplicationController < ActionController::API
   include ActionController::RequestForgeryProtection
 
   CSRF_COOKIE = "CSRF-TOKEN".freeze
+  # Counters for `rate_limit`. Kept in process memory: the app runs as a single
+  # instance, and tests stay independent of the app cache (a null store there).
+  RATE_LIMIT_STORE = ActiveSupport::Cache::MemoryStore.new
 
   class Forbidden < StandardError; end
 
@@ -23,6 +26,10 @@ class ApplicationController < ActionController::API
 
   rescue_from Forbidden do
     render json: { error: I18n.t("api.errors.forbidden") }, status: :forbidden
+  end
+
+  rescue_from ActionController::TooManyRequests do
+    render json: { error: I18n.t("api.errors.too_many_requests") }, status: :too_many_requests
   end
 
   rescue_from ActionController::InvalidAuthenticityToken do

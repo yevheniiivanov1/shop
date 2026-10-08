@@ -6,6 +6,8 @@ module Users
   class RegistrationsController < Devise::RegistrationsController
     respond_to :json
 
+    rate_limit to: 10, within: 1.hour, only: :create, store: RATE_LIMIT_STORE
+
     private
 
     def sign_up_params

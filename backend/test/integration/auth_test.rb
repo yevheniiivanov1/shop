@@ -44,6 +44,31 @@ class AuthTest < ActionDispatch::IntegrationTest
     assert json["error"].present?
   end
 
+  test "sign-in attempts are rate limited per IP" do
+    10.times do
+      post "/api/auth/sign_in", params: { user: { email: "alice@example.com", password: "wrong" } }, as: :json
+      assert_response :unauthorized
+    end
+
+    post "/api/auth/sign_in", params: { user: { email: "alice@example.com", password: "password" } }, as: :json
+    assert_response :too_many_requests
+    assert_match "Too many attempts", json["error"]
+
+    post "/api/auth/sign_in", params: { user: { email: "alice@example.com", password: "password" } },
+                              headers: { "REMOTE_ADDR" => "203.0.113.7" }, as: :json
+    assert_response :success, "other IPs are not affected"
+  end
+
+  test "sign-ups are rate limited per IP" do
+    10.times do |i|
+      post "/api/auth/sign_up", params: { user: { email: "bad-#{i}" } }, as: :json
+      assert_response :unprocessable_content
+    end
+
+    post "/api/auth/sign_up", params: { user: { email: "bad" } }, as: :json
+    assert_response :too_many_requests
+  end
+
   test "protected endpoints answer 401 to guests" do
     get "/api/orders", as: :json
     assert_response :unauthorized

@@ -4,6 +4,9 @@ module Users
   class SessionsController < Devise::SessionsController
     respond_to :json
 
+    # Slows down password guessing: 10 attempts per IP every 3 minutes.
+    rate_limit to: 10, within: 3.minutes, only: :create, store: RATE_LIMIT_STORE
+
     private
 
     def respond_with(resource, _options = {})

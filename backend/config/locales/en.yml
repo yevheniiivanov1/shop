@@ -20,6 +20,7 @@ en:
       invalid_csrf: Your session has expired, please try again
       cannot_demote_self: You can't remove admin rights from yourself
       cannot_delete_self: You can't delete yourself
+      too_many_requests: Too many attempts, please try again in a few minutes
   checkout:
     errors:
       empty: Your cart is empty
