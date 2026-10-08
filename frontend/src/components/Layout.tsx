@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import logoUrl from '../assets/logo.svg'
 import { useAuth } from '../auth/AuthContext'
 import { useCart } from '../cart/CartContext'
 
@@ -23,7 +24,7 @@ export function Layout() {
       <header className="header">
         <div className="header__inner container">
           <Link to="/" className="logo">
-            <img src="/favicon.svg" alt="" width="28" height="28" />
+            <img src={logoUrl} alt="" width="28" height="28" />
             Shop
           </Link>
 

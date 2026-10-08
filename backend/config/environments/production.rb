@@ -12,7 +12,9 @@ Rails.application.configure do
   # Full error reports are disabled.
   config.consider_all_requests_local = false
 
-  # Cache assets for far-future expiry since they are all digest stamped.
+  # Cache assets for far-future expiry since they are all digest stamped: public/
+  # holds only the client's fingerprinted build (index.html is served by
+  # SpaController without caching, see the Dockerfile).
   config.public_file_server.headers = { "cache-control" => "public, max-age=#{1.year.to_i}" }
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
